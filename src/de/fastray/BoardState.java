@@ -5,6 +5,7 @@
 package de.fastray;
 
 import de.fastray.BoardElement;
+import de.fastray.Connection;
 
 import android.util.Log;
 import java.util.Random;
@@ -23,6 +24,20 @@ public class BoardState {
 
   static public final int EMPTY = 0;
 
+  static int ConnectionFingerprint(BoardElement start, BoardElement end) {
+    int x = start.row * 100 + start.col;
+    int y = end.row * 100 + end.col;
+    // Swap to get always the same fingerprint independent whether we are called
+    // start-end or end-start
+    if (x > y ) {
+      int temp = x;
+      x = y;
+      y = temp;
+    }
+    Log.d("", String.format("%d %d" , x ,y));
+    return x ^ y;
+  }
+
   public class State {
     // The elements of the board are stored in this array.
     // A value defined by "EMPTY" means that its not set yet.
@@ -30,18 +45,19 @@ public class BoardState {
     // board_elements[0][0] = top left corner
     // board_elements[0][board_width - 1] = top right corner
     // board_elements[board_width - 1][0] = lower left corner
-    // board_elements[board_widthi - 1][board_width - 1] = lower right corner
+    // board_elements[board_width - 1][board_width - 1] = lower right corner
     public BoardElement [][] board_elements = null;
-    public boolean [][] cell_occupied = null;
+    
+    public int [][] cell_occupied = null;
+
     // The width of the board. We only assume squared boards.
     public int board_width=0;
-
 
 
     public State(int width) {
       board_width = width;
       board_elements = new BoardElement[width][width];
-      cell_occupied = new boolean[width][width];
+      cell_occupied = new int[width][width];
     }
 
     public State CloneWithoutConnections() {
@@ -50,14 +66,14 @@ public class BoardState {
 	newstate.board_elements = new BoardElement[board_elements.length][board_elements.length];
 	for (int i = 0; i < board_elements.length; ++i) {
 	  for (int j = 0; j < board_elements.length; ++j) {
-	    if (board_elements[i][j] == null) continue;
+	    if (board_elements[i][j] == null)
+              continue;
 	    newstate.board_elements[i][j] = board_elements[i][j].clone();
-
 	  }
 	}
       }
       if (cell_occupied != null) {
-	newstate.cell_occupied = new boolean[board_elements.length][board_elements.length];
+	newstate.cell_occupied = new int[board_elements.length][board_elements.length];
 	for (int i = 0; i < board_elements.length; ++i) {
 	  for (int j = 0; j < board_elements.length; ++j) {
 	    newstate.cell_occupied[i][j] = cell_occupied[i][j];
@@ -69,21 +85,24 @@ public class BoardState {
 
     public void AddToBridgeCache(BoardElement first, BoardElement second) {
       if (first == null || second == null) { return; }
+      final int fingerprint = ConnectionFingerprint(first, second);
+      Log.d(getClass().getName(),
+          String.format("Fingerprint of this bridge %d", fingerprint));
       // mark the end points as occupied.
-      cell_occupied[first.row][first.col] = true;
-      cell_occupied[second.row][second.col] = true;
+      cell_occupied[first.row][first.col] = fingerprint;
+      cell_occupied[second.row][second.col] = fingerprint;
 
       int dcol = second.col - first.col;
       int drow = second.row - first.row;
 
       if (first.row == second.row) {
 	for (int i = (int) (first.col + Math.signum(dcol)); i != second.col; i += Math.signum(dcol)) {
-	  cell_occupied[first.row][i] = true;
+	  cell_occupied[first.row][i] = fingerprint;
 	}
       } else {
 	assert first.col == second.col;
 	for (int i = (int) (first.row + Math.signum(drow)); i != second.row; i+= Math.signum(drow)) {
-	  cell_occupied[i][first.col] = true;
+	  cell_occupied[i][first.col] = fingerprint;
 	}
       }
     }
@@ -112,13 +131,15 @@ public class BoardState {
     }
   }
 
-
   public BoardState(int hardness) {
     NewGame(hardness);
   }
 
   public boolean TryAddNewBridge(BoardElement start, BoardElement end, int count) {
     assertEquals(count, 1);
+    assert (start != null);
+    assert (end != null);
+    final int fingerprint = ConnectionFingerprint(start, end);
 
     Log.d(getClass().getName(),
 	String.format("considering (%d,%d) and (%d,%d)", start.row,start.col, end.row,end.col));
@@ -148,15 +169,18 @@ public class BoardState {
     }
 
     Log.d(getClass().getName(),
-     String.format("Sums:%d @ (%d,%d)  and %d @ (%d,%d)", count_start, start.row,start.col, count_end, end.row,end.col));
+     String.format("Sums:%d @ (%d,%d)  and %d @ (%d,%d)",
+       count_start, start.row, start.col,
+       count_end, end.row, end.col));
 
-    BoardElement.Connection start_connection = null;
-    BoardElement.Connection end_connection = null;
+    Connection start_connection = null;
+    Connection end_connection = null;
 
     // Next we check whether we are crossing any lines.
     if (start.row == end.row) {
       for (int i = (int) (start.col + Math.signum(dcol)); i != end.col; i += Math.signum(dcol)) {
-	if (getCurrentState().cell_occupied[start.row][i]) {
+	if (getCurrentState().cell_occupied[start.row][i] > 0 &&
+            getCurrentState().cell_occupied[start.row][i] != fingerprint) {
 	  Log.d(getClass().getName(), "Crossing an occupied cell.");
 	  return false;
 	}
@@ -176,7 +200,8 @@ public class BoardState {
     } else {
       assert start.col == end.col;
       for (int i = (int) (start.row + Math.signum(drow)); i != end.row ; i += Math.signum(drow)) {
-	if (getCurrentState().cell_occupied[i][start.col]) {
+	if (getCurrentState().cell_occupied[i][start.col] > 0 &&
+            getCurrentState().cell_occupied[i][start.col] != fingerprint) {
 	  Log.d(getClass().getName(), "Crossing an occupied cell.");
 	  return false;
 	}
@@ -198,19 +223,20 @@ public class BoardState {
     start_connection.second += count;
     end_connection.second += count;
 
-
     getCurrentState().AddToBridgeCache(start, end);
-    Log.d(getClass().getName(), "New bridge added.");
 
-    Log.d(getClass().getName(), String.format("Sums:%d @ (%d,%d)  and %d @ (%d,%d)", count_start, start.row,start.col, count_end, end.row,end.col));
+    Log.d(getClass().getName(),
+        String.format("New bridge added. Sums:%d @ (%d,%d)  and %d @ (%d,%d)",
+         count_start, start.row,start.col,
+         count_end, end.row,end.col));
     return true;
   }
 
-  private BoardElement.Connection GetOrCreateConnection(
+  private Connection GetOrCreateConnection(
       BoardElement end,
-      BoardElement.Connection connection) {
+      Connection connection) {
     if (connection!= null) { return connection; }
-    return new BoardElement.Connection(end, 0);
+    return new Connection(end, 0);
   }
 
   protected void InitializeEasy() {

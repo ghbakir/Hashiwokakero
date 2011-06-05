@@ -2,6 +2,7 @@ package de.fastray;
 
 import java.util.Vector;
 import android.util.Log;
+import de.fastray.Connection;
 
 // This class holds information about a grid point.
 // Every grid point does have
@@ -34,26 +35,6 @@ public class BoardElement {
   public enum Direction {
     EAST, SOUTH, WEST, NORTH;
   }
-  
-  class Connection {
-    public BoardElement source;
-    public BoardElement destination;
-    public int second;
-    public Connection() {
-      source = null;
-      second = 0;
-    }
-    public Connection(BoardElement elt, int val) {
-      source = elt;
-      second = val;
-    }
-    public Connection clone() {
-      Connection c = new Connection();
-      c.source = source;
-      c.second = second;
-      return c;
-    }
-  }; // Connection
 
   // Pairs of a BoardElement and the number of connecting bridges
   public Connection connecting_north = null;
@@ -91,7 +72,6 @@ public class BoardElement {
 
     return elt;
   }
-
 
   private int GetConnectionCount(Connection connection){
     if (connection == null) {
