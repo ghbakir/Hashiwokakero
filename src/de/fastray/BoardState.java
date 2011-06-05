@@ -120,7 +120,8 @@ public class BoardState {
   public boolean TryAddNewBridge(BoardElement start, BoardElement end, int count) {
     assertEquals(count, 1);
 
-    Log.d(getClass().getName(), String.format("considering (%d,%d) and (%d,%d)", start.row,start.col, end.row,end.col));
+    Log.d(getClass().getName(),
+	String.format("considering (%d,%d) and (%d,%d)", start.row,start.col, end.row,end.col));
     if (start.row == end.row && start.col == end.col) {
       Log.d(getClass().getName(), "Same nodes selected!");
       return false;
@@ -146,7 +147,8 @@ public class BoardState {
       return false;
     }
 
-    Log.d(getClass().getName(), String.format("Sums:%d @ (%d,%d)  and %d @ (%d,%d)", count_start, start.row,start.col, count_end, end.row,end.col));
+    Log.d(getClass().getName(),
+     String.format("Sums:%d @ (%d,%d)  and %d @ (%d,%d)", count_start, start.row,start.col, count_end, end.row,end.col));
 
     BoardElement.Connection start_connection = null;
     BoardElement.Connection end_connection = null;
