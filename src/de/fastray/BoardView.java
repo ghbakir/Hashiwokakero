@@ -142,8 +142,10 @@ public class BoardView extends View {
 	    } else {
 	      icon = default_icon;
 	    }
-	    int max_connecting_bridges = board_state.getCurrentState().board_elements[row][col].max_connecting_bridges;
-	    int count = board_state.getCurrentState().board_elements[row][col].GetCurrentCount();
+	    int max_connecting_bridges =
+	      board_state.getCurrentState().board_elements[row][col].max_connecting_bridges;
+	    int count =
+	      board_state.getCurrentState().board_elements[row][col].GetCurrentCount();
 	    PaintNumber(canvas, p, max_connecting_bridges, count == max_connecting_bridges, icon);
 	  }
 	}

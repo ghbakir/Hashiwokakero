@@ -98,10 +98,11 @@ public class HashiGame extends Activity implements OnClickListener {
     // Add the ImageView to the layout and set the layout as the content view
     setContentView(l);
 
-    gametimer.schedule(new TimerTask() { public void run() {
-	seconds+=0.1; hRefresh.sendEmptyMessage(0);
-	} }, 100, 100);
-
+//TODO(ghb): this does crash the init. Add back when figured out.
+//    gametimer.schedule(new TimerTask() { public void run() {
+//	seconds+=0.1; hRefresh.sendEmptyMessage(0);
+//	} }, 100, 100);
+//
     view.requestFocus();
   }
 
